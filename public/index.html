@@ -1,0 +1,269 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Oficina de agentes</title>
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%234f5ee8'/%3E%3Ccircle cx='16' cy='11.5' r='4.2' fill='%23fff'/%3E%3Cpath d='M9 24.5c0-3.9 3.1-6.5 7-6.5s7 2.6 7 6.5' fill='%23fff'/%3E%3C/svg%3E">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./styles.css">
+  <script type="importmap">
+    { "imports": { "three": "./vendor/three.module.js" } }
+  </script>
+</head>
+<body>
+  <canvas id="scene" tabindex="0" aria-label="Vista 3D de la oficina. Arrastra para girar, usa la rueda para acercar."></canvas>
+
+  <button class="panel-reveal" id="panelReveal" type="button" aria-label="Mostrar panel de agentes">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="3" y="3" width="18" height="18" rx="4"/>
+      <line x1="9" y1="3" x2="9" y2="21"/>
+    </svg>
+    <span>Agentes</span>
+    <span class="reveal-count" id="revealCount">0</span>
+  </button>
+
+  <aside class="panel" aria-label="Panel de agentes">
+    <header class="panel-head">
+      <div class="head-top">
+        <div class="brand">
+          <h1>Oficina de agentes</h1>
+          <p class="conn"><span id="connDot"></span><span id="connText">Conectando…</span></p>
+        </div>
+        <button class="icon-btn" id="panelCollapse" type="button" title="Ocultar panel" aria-label="Ocultar panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polyline points="15 18 9 12 15 6"/>
+          </svg>
+        </button>
+      </div>
+
+      <div class="stats-strip" id="statsStrip" hidden>
+        <div class="stat-pill" id="statWorkingPill">
+          <span class="stat-dot working"></span>
+          <span class="stat-val" id="statWorking">0</span>
+          <span class="stat-lbl" id="statWorkingLbl">activos</span>
+        </div>
+        <div class="stat-pill" id="statWaitingPill">
+          <span class="stat-dot waiting"></span>
+          <span class="stat-val" id="statWaiting">0</span>
+          <span class="stat-lbl" id="statWaitingLbl">espera</span>
+        </div>
+        <div class="stat-pill" id="statIdlePill">
+          <span class="stat-dot idle"></span>
+          <span class="stat-val" id="statIdle">0</span>
+          <span class="stat-lbl" id="statIdleLbl">libres</span>
+        </div>
+      </div>
+    </header>
+
+    <section class="rostersec" aria-labelledby="rosterTitle">
+      <div class="sec-head">
+        <h2 id="rosterTitle">Agentes</h2>
+        <span class="sec-badge" id="rosterCount">0</span>
+      </div>
+      <ol id="roster"></ol>
+      <div id="empty" hidden>
+        <div class="empty-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+            <circle cx="9" cy="7" r="4"/>
+            <path d="M23 21v-2a4 4 0 0 0-3-3.87"/>
+            <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+        </div>
+        <strong>Todavía no ha llegado nadie</strong>
+        Abre una sesión de Claude Code o Antigravity con los hooks instalados y cada agente aparecerá aquí con su escritorio. También puedes probar con la simulación.
+        <button class="btn" id="demoStart" type="button">Ver demostración</button>
+      </div>
+    </section>
+
+    <section class="logsec" aria-labelledby="logTitle">
+      <div class="sec-head">
+        <h2 id="logTitle">Actividad reciente</h2>
+      </div>
+      <ul id="log"></ul>
+    </section>
+
+    <div class="panel-foot" id="demoFoot" hidden>
+      <button class="demo-stop-btn" id="demoBtn" type="button">Detener demostración</button>
+    </div>
+  </aside>
+
+  <nav class="viewport-dock" aria-label="Controles de vista">
+    <button class="dock-btn" id="resetView" type="button" title="Restablecer cámara">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M3 12a9 9 0 1 0 3-6.7L3 8"/>
+        <path d="M3 3v5h5"/>
+      </svg>
+      <span>Restablecer</span>
+    </button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button class="dock-btn" id="labelToggle" type="button" title="Cambiar estilo de etiquetas 3D">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+        <line x1="7" y1="7" x2="7.01" y2="7"/>
+      </svg>
+      <span id="labelToggleText">Etiquetas</span>
+    </button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button class="dock-btn" id="ppToggle" type="button" title="Sala de juegos: Ping-Pong, Billar y Dardos">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="10.5" cy="10.5" r="6.5"/>
+        <path d="M15.2 15.2L20 20"/>
+        <circle cx="19" cy="6" r="2"/>
+      </svg>
+      <span>Juegos</span>
+      <i class="dock-dot" id="ppLiveDot" hidden></i>
+    </button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button class="dock-btn" id="ecoToggle" type="button" title="Modo ahorro: reduce sombras, blur y FPS para menor consumo de GPU">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+      </svg>
+      <span id="ecoToggleText">Ahorro</span>
+    </button>
+    <span class="dock-sep" aria-hidden="true"></span>
+    <button class="dock-btn" id="themeToggle" type="button" title="Cambiar tema claro/oscuro" aria-label="Cambiar tema">
+      <svg id="themeIconSun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <circle cx="12" cy="12" r="5"/>
+        <line x1="12" y1="1" x2="12" y2="3"/>
+        <line x1="12" y1="21" x2="12" y2="23"/>
+        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+        <line x1="1" y1="12" x2="3" y2="12"/>
+        <line x1="21" y1="12" x2="23" y2="12"/>
+        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+      </svg>
+      <svg id="themeIconMoon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+        <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+      </svg>
+    </button>
+  </nav>
+
+  <section class="pp-card" id="ppCard" aria-label="Sala de juegos">
+    <div class="pp-head">
+      <div class="pp-title-wrap">
+        <span class="pp-title" id="ppTitle">Sala de juegos</span>
+        <span class="pp-badge" id="ppBadge">Libre</span>
+      </div>
+      <button class="icon-btn" id="ppClose" type="button" title="Cerrar" aria-label="Cerrar panel de juegos">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <line x1="18" y1="6" x2="6" y2="18"/>
+          <line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </button>
+    </div>
+
+    <div class="game-tabs" role="tablist" aria-label="Actividades">
+      <button class="game-tab is-active" type="button" role="tab" data-game="pingpong" aria-selected="true">🏓 Ping-Pong</button>
+      <button class="game-tab" type="button" role="tab" data-game="billiards" aria-selected="false">🎱 Billar</button>
+      <button class="game-tab" type="button" role="tab" data-game="darts" aria-selected="false">🎯 Dardos</button>
+    </div>
+
+    <div class="pp-score-grid">
+      <div class="pp-player" id="ppLeftBox">
+        <div class="pp-phead">
+          <span class="pp-swatch" id="ppLeftColor"></span>
+          <span class="pp-pname" id="ppLeftName">Libre</span>
+          <span class="pp-serve" id="ppLeftServe" title="Turno activo" hidden></span>
+        </div>
+        <div class="pp-pts" id="ppLeftScore">0</div>
+        <div class="pp-potted" id="ppLeftPotted"></div>
+        <div class="pp-wins" id="ppLeftWins"></div>
+      </div>
+
+      <div class="pp-mid">
+        <span class="pp-vs">VS</span>
+        <span class="pp-rally" id="ppRally">A 5 pts</span>
+      </div>
+
+      <div class="pp-player" id="ppRightBox">
+        <div class="pp-phead">
+          <span class="pp-swatch" id="ppRightColor"></span>
+          <span class="pp-pname" id="ppRightName">Libre</span>
+          <span class="pp-serve" id="ppRightServe" title="Turno activo" hidden></span>
+        </div>
+        <div class="pp-pts" id="ppRightScore">0</div>
+        <div class="pp-potted" id="ppRightPotted"></div>
+        <div class="pp-wins" id="ppRightWins"></div>
+      </div>
+    </div>
+
+    <div class="pp-event" id="ppEvent">Los agentes libres juegan automáticamente en la sala.</div>
+
+    <div class="pp-human" id="ppHumanBar" hidden>
+      <div class="pp-human-top">
+        <span class="pp-human-tag" id="ppHumanTag">Tu turno</span>
+        <span class="pp-human-hint" id="ppHumanHint">Apunta con el ratón o teclado</span>
+      </div>
+      <div class="pp-human-power" id="ppPowerRow" hidden>
+        <button class="pp-mini-btn" id="ppAimLeft" type="button" title="Girar puntería a la izquierda (←)">◀</button>
+        <label class="pp-power-lbl" for="ppPowerInput">
+          <span>Fuerza</span>
+          <input id="ppPowerInput" type="range" min="1.3" max="3.8" step="0.05" value="2.6">
+        </label>
+        <button class="pp-mini-btn" id="ppAimRight" type="button" title="Girar puntería a la derecha (→)">▶</button>
+      </div>
+      <div class="pp-human-btns">
+        <button class="pp-btn" id="ppMoveLeftBtn" type="button" hidden>◀ Izq</button>
+        <button class="pp-btn primary pp-action-btn" id="ppActionBtn" type="button">🏓 Sacar (Espacio)</button>
+        <button class="pp-btn" id="ppMoveRightBtn" type="button" hidden>Der ▶</button>
+      </div>
+    </div>
+
+    <div class="pp-rules">
+      <div class="pp-rules-title">Mini reglas</div>
+      <ul id="ppRulesList">
+        <li>Gana quien llegue a <strong>5 pts</strong> con ventaja de <strong>2</strong> (deuce desde 4–4).</li>
+        <li>El saque rota cada <strong>2 pts</strong> (cada 1 en deuce).</li>
+        <li>El ganador permanece en mesa si hay más agentes libres.</li>
+      </ul>
+    </div>
+
+    <div class="pp-actions">
+      <button class="pp-btn" id="ppFocusBtn" type="button">Ver mesa</button>
+      <button class="pp-btn" id="ppSimBtn" type="button">Simular IA</button>
+      <button class="pp-btn primary" id="ppPlayBtn" type="button">🎮 Jugar</button>
+    </div>
+  </section>
+
+  <div class="focus-card" id="focusCard" role="region" aria-label="Agente seleccionado">
+    <div class="focus-main">
+      <span class="avatar" id="focusAvatar"></span>
+      <div class="focus-body">
+        <div class="focus-top">
+          <span class="focus-name" id="focusName"></span>
+          <span class="state" id="focusState"><i></i><span id="focusStateText"></span></span>
+          <span class="focus-meta" id="focusMeta"></span>
+        </div>
+        <div class="focus-detail" id="focusDetail"></div>
+      </div>
+      <button class="focus-close" id="focusClose" type="button" title="Dejar de seguir (Esc)">Soltar</button>
+    </div>
+
+    <div class="interact-bar" id="interactBar" aria-label="Interactuar con el agente">
+      <button class="act-btn" type="button" data-action="wave" title="Saludar al agente"><span>👋</span> Saludar</button>
+      <button class="act-btn" type="button" data-action="cheer" title="Motivar y felicitar"><span>🔥</span> Motivar</button>
+      <button class="act-btn" type="button" data-action="coffee" title="Invitar un café"><span>☕</span> Café</button>
+      <button class="act-btn" type="button" data-action="dance" title="Celebrar bailando"><span>🎵</span> Bailar</button>
+      <span class="act-sep" aria-hidden="true"></span>
+      <button class="act-btn act-game" type="button" data-action="play_pingpong" title="Enviar a Ping-Pong (con NPC si está solo)">🏓</button>
+      <button class="act-btn act-game" type="button" data-action="play_billiards" title="Enviar a Billar (con NPC si está solo)">🎱</button>
+      <button class="act-btn act-game" type="button" data-action="play_darts" title="Enviar a Dardos (con NPC si está solo)">🎯</button>
+      <button class="act-btn act-challenge" type="button" data-action="challenge_game" title="Jugar tú una partida contra este personaje"><span>🎮</span> Retar</button>
+    </div>
+  </div>
+
+  <div id="fallback" hidden>
+    <div class="fallback-card">
+      <h1>Tu navegador no pudo iniciar el 3D</h1>
+      <p>Esta vista necesita WebGL. Prueba con Chrome, Edge, Firefox o Safari actualizados, y activa la aceleración por hardware.</p>
+    </div>
+  </div>
+
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

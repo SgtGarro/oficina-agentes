@@ -1,0 +1,20 @@
+{
+  "name": "oficina-agentes",
+  "version": "1.0.0",
+  "description": "Oficina 3D en vivo para ver trabajar a tus agentes de Claude Code y Antigravity",
+  "type": "module",
+  "private": true,
+  "engines": { "node": ">=18" },
+  "scripts": {
+    "start": "node server.js",
+    "demo": "node server.js --demo",
+    "privado": "node server.js --sin-detalle",
+    "instalar-hooks": "node instalar-hooks.mjs --usuario",
+    "quitar-hooks": "node instalar-hooks.mjs --usuario --quitar",
+    "instalar-antigravity": "node instalar-hooks.mjs --antigravity --usuario",
+    "quitar-antigravity": "node instalar-hooks.mjs --antigravity --usuario --quitar",
+    "instalar-todos": "node instalar-hooks.mjs --todos --usuario",
+    "quitar-todos": "node instalar-hooks.mjs --todos --usuario --quitar",
+    "test": "node test/smoke.mjs"
+  }
+}

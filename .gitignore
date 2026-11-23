@@ -1,0 +1,5 @@
+node_modules/
+.playwright-mcp/
+*.bak-oficina
+.DS_Store
+Thumbs.db
